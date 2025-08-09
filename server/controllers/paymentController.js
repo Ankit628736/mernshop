@@ -28,18 +28,32 @@ exports.createPaymentIntent = async (req, res) => {
     }
 
     const amountInCents = Math.round(totalAmount * 100);
-    console.log(`[PAYMENT] Creating intent for user ${user._id} amount=${amountInCents}`);
+    const currency = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+    console.log(`[PAYMENT] Creating intent user=${user._id} amount=${amountInCents} currency=${currency}`);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
-      currency: 'usd',
-      metadata: { userId: req.user.id }
+      currency,
+      metadata: { userId: req.user.id, cartItems: user.cart.length }
     });
 
     res.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {
     console.error('[PAYMENT] Stripe/Error:', err);
-    const msg = process.env.NODE_ENV === 'production' ? 'Failed to create payment intent.' : err.message;
-    res.status(500).json({ error: msg });
+    const prod = process.env.NODE_ENV === 'production';
+    const debug = process.env.STRIPE_DEBUG === '1';
+    const baseMsg = 'Failed to create payment intent.';
+    if (!prod || debug) {
+      return res.status(500).json({
+        error: baseMsg,
+        details: {
+          type: err.type,
+          code: err.code,
+          message: err.message,
+          raw: debug ? err : undefined
+        }
+      });
+    }
+    res.status(500).json({ error: baseMsg });
   }
 };
