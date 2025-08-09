@@ -38,6 +38,12 @@ exports.createPaymentIntent = async (req, res) => {
     const currency = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
     console.log(`[PAYMENT] Creating intent user=${user._id} amount=${amountInCents} currency=${currency}`);
 
+    // Basic minimum amount pre-check (Stripe often enforces >= 50 for many currencies like usd, inr)
+    const minAmount = 50; // cents
+    if (amountInCents < minAmount) {
+      return res.status(400).json({ error: `Order total too low (need at least ${(minAmount/100).toFixed(2)} ${currency.toUpperCase()}).` });
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency,
@@ -47,10 +53,9 @@ exports.createPaymentIntent = async (req, res) => {
     res.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {
     console.error('[PAYMENT] Stripe/Error:', err);
-    const baseMsg = 'Failed to create payment intent.';
-    // Always return diagnostic details (can remove later for security)
+    const combined = err && err.message ? `Failed to create payment intent: ${err.message}` : 'Failed to create payment intent.';
     res.status(500).json({
-      error: baseMsg,
+      error: combined,
       details: {
         type: err.type,
         code: err.code,
