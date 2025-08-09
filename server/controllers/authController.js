@@ -27,6 +27,13 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password required." });
+    }
+    if (!process.env.JWT_SECRET) {
+      console.error('[AUTH] Missing JWT_SECRET environment variable');
+      return res.status(500).json({ error: 'Server misconfiguration: JWT secret not set.' });
+    }
     const user = await User.findOne({ email });
     if (!user || !await bcrypt.compare(password, user.password)) {
       return res.status(400).json({ error: "Invalid credentials." });
@@ -51,7 +58,8 @@ exports.login = async (req, res) => {
       isAdmin: user.isAdmin
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+  console.error('[AUTH][LOGIN] Unexpected error:', err);
+  res.status(500).json({ error: 'Internal server error during login.' });
   }
 };
 
