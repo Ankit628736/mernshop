@@ -1,10 +1,12 @@
 const jwt = require('jsonwebtoken');
 
 const auth = (req, res, next) => {
-  let token = req.cookies.token;
-  // Fallback: allow Bearer token in Authorization header
-  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+  // Prefer Authorization Bearer token (stateless) over cookie
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
     token = req.headers.authorization.substring(7);
+  } else {
+    token = req.cookies.token;
   }
   if (!token) {
     return res.status(401).json({ error: "Access denied. Not authorized." });

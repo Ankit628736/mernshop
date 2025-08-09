@@ -13,6 +13,7 @@ function Navbar() {
     try {
       await axios.post('/api/auth/logout');
       setUser(null);
+  localStorage.removeItem('authToken');
       clearCart();
       navigate('/login');
     } catch (err) {

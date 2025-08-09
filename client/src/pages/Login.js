@@ -15,6 +15,9 @@ function Login() {
     setError('');
     try {
       const res = await axios.post('/api/auth/login', { email, password });
+      if (res.data?.token) {
+        localStorage.setItem('authToken', res.data.token);
+      }
       setUser(res.data);
       if (res.data.isAdmin) {
         navigate('/admin');

@@ -59,11 +59,13 @@ exports.login = async (req, res) => {
       cookieOptions.sameSite = 'none';
     }
     res.cookie('token', token, cookieOptions);
+    // Return token as part of JSON so client can use Authorization header (more reliable than cross-site cookie)
     res.status(200).json({
       id: user._id,
       name: user.name,
       email: user.email,
-      isAdmin: user.isAdmin
+      isAdmin: user.isAdmin,
+      token
     });
   } catch (err) {
   console.error('[AUTH][LOGIN] Unexpected error:', err);

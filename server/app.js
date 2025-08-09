@@ -34,28 +34,35 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Use cookie parser
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI, {})
-  .then(() => {
-    console.log("MongoDB connected.");
-    // Create admin user on startup if it doesn't exist
-    const initAdmin = async () => {
-      const adminExists = await User.findOne({ email: process.env.ADMIN_EMAIL });
-      if (!adminExists) {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, salt);
-        const admin = new User({
-          name: 'Admin',
-          email: process.env.ADMIN_EMAIL,
-          password: hashedPassword,
-          isAdmin: true
-        });
-        await admin.save();
-        console.log('Admin user created.');
-      }
-    };
-    initAdmin();
-  })
-  .catch(err => console.error("MongoDB connection error:", err));
+const connectMongo = async (attempt = 1) => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      retryWrites: true
+    });
+    console.log('MongoDB connected.');
+    const adminExists = await User.findOne({ email: process.env.ADMIN_EMAIL });
+    if (!adminExists && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, salt);
+      const admin = new User({
+        name: 'Admin',
+        email: process.env.ADMIN_EMAIL,
+        password: hashedPassword,
+        isAdmin: true
+      });
+      await admin.save();
+      console.log('Admin user created.');
+    }
+  } catch (err) {
+    console.error(`MongoDB connection error (attempt ${attempt}):`, err.message);
+    if (attempt < 3) {
+      setTimeout(() => connectMongo(attempt + 1), 3000 * attempt);
+    }
+  }
+};
+connectMongo();
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/product'));
