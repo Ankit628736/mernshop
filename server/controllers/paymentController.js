@@ -18,10 +18,17 @@ exports.createPaymentIntent = async (req, res) => {
       return res.status(400).json({ error: 'Your cart is empty.' });
     }
 
-    const totalAmount = user.cart.reduce((acc, item) => {
-      if (!item.product) return acc; // safety
-      return acc + (item.product.price * item.quantity);
-    }, 0);
+    // Validate product prices and compute total
+    let totalAmount = 0;
+    for (const item of user.cart) {
+      if (!item.product) continue;
+      const rawPrice = item.product.price;
+      const priceNum = typeof rawPrice === 'number' ? rawPrice : Number(rawPrice);
+      if (Number.isNaN(priceNum) || priceNum < 0) {
+        return res.status(400).json({ error: `Invalid price for product ${item.product._id}` });
+      }
+      totalAmount += priceNum * item.quantity;
+    }
 
     if (totalAmount <= 0) {
       return res.status(400).json({ error: 'Cart total must be greater than zero.' });
@@ -40,20 +47,15 @@ exports.createPaymentIntent = async (req, res) => {
     res.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {
     console.error('[PAYMENT] Stripe/Error:', err);
-    const prod = process.env.NODE_ENV === 'production';
-    const debug = process.env.STRIPE_DEBUG === '1';
     const baseMsg = 'Failed to create payment intent.';
-    if (!prod || debug) {
-      return res.status(500).json({
-        error: baseMsg,
-        details: {
-          type: err.type,
-          code: err.code,
-          message: err.message,
-          raw: debug ? err : undefined
-        }
-      });
-    }
-    res.status(500).json({ error: baseMsg });
+    // Always return diagnostic details (can remove later for security)
+    res.status(500).json({
+      error: baseMsg,
+      details: {
+        type: err.type,
+        code: err.code,
+        message: err.message
+      }
+    });
   }
 };
