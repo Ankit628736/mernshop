@@ -50,5 +50,15 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/payment', require('./routes/payment'));
 app.use('/api/orders', require('./routes/order'));
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Simple health check (useful to test serverless deployment)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// Only start the server if this file is run directly (local dev). In Vercel serverless we just export the app.
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = app; // Export for serverless handler
