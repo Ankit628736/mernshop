@@ -42,14 +42,22 @@ exports.login = async (req, res) => {
 
     // Cookie settings: allow cross-site (frontend domain different from API) in production
     const isProd = process.env.NODE_ENV === 'production';
+    // NOTE: Current express/cookie version in package.json may not support SameSite="none".
+    // To avoid TypeError, we conditionally omit SameSite when production requires 'none'.
+    const wantSameSite = isProd ? 'none' : 'lax';
     const cookieOptions = {
       httpOnly: true,
-      secure: isProd, // must be true for SameSite=None on modern browsers
-      sameSite: isProd ? 'none' : 'lax', // lowercase per cookie spec
-      domain: process.env.COOKIE_DOMAIN || undefined, // optionally set e.g. yourdomain.com for subdomains
+      secure: isProd,
+      domain: process.env.COOKIE_DOMAIN || undefined,
       path: '/',
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
+      maxAge: 24 * 60 * 60 * 1000
     };
+    if (wantSameSite !== 'none') {
+      cookieOptions.sameSite = wantSameSite; // safe values: 'lax'/'strict'
+    } else if (process.env.ALLOW_SAMESITE_NONE === '1') {
+      // Allow forcing SameSite=None after dependency upgrade
+      cookieOptions.sameSite = 'none';
+    }
     res.cookie('token', token, cookieOptions);
     res.status(200).json({
       id: user._id,
@@ -66,14 +74,18 @@ exports.login = async (req, res) => {
 // User Logout
 exports.logout = (req, res) => {
   const isProd = process.env.NODE_ENV === 'production';
-  res.cookie('token', '', {
+  const logoutCookie = {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
     domain: process.env.COOKIE_DOMAIN || undefined,
     path: '/',
     expires: new Date(0)
-  });
+  };
+  if (!isProd || process.env.ALLOW_SAMESITE_NONE === '1') {
+    // Use lax for dev; only set none if explicitly allowed.
+    logoutCookie.sameSite = isProd ? 'none' : 'lax';
+  }
+  res.cookie('token', '', logoutCookie);
   res.status(200).json({ message: "Logged out successfully." });
 };
 

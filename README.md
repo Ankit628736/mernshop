@@ -69,6 +69,9 @@ app.use(cors({ origin: allowedOrigin, credentials: true }));
 ```
 Set CLIENT_ORIGIN in Vercel to deployed frontend URL.
 
+### Cookie / Auth Notes
+Because the server currently uses an older Express cookie implementation, SameSite="none" can raise errors. The code omits SameSite in production unless you set `ALLOW_SAMESITE_NONE=1` (after upgrading dependencies). For preview/basic usage you can rely on default browser behavior or set a custom domain + upgrade packages.
+
 (If not yet changed in code, do so before deploy.)
 
 ### 5. Axios Base URL
