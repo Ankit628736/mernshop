@@ -2,13 +2,19 @@ const stripeSecret = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecret) {
   console.warn('[PAYMENT] STRIPE_SECRET_KEY is not set. Payment intent creation will fail.');
 }
-const stripe = require('stripe')(stripeSecret || '');
+if (stripeSecret && stripeSecret.startsWith('pk_')) {
+  console.error('[PAYMENT] STRIPE_SECRET_KEY is a publishable (pk_) key. You must use a secret (sk_) key from Stripe dashboard.');
+}
+const stripe = require('stripe')(stripeSecret && stripeSecret.startsWith('sk_') ? stripeSecret : '');
 const User = require('../models/User');
 
 exports.createPaymentIntent = async (req, res) => {
   try {
     if (!stripeSecret) {
-      return res.status(500).json({ error: 'Payment service not configured.' });
+      return res.status(500).json({ error: 'Payment service not configured (missing STRIPE_SECRET_KEY).' });
+    }
+    if (stripeSecret.startsWith('pk_')) {
+      return res.status(500).json({ error: 'Server misconfiguration: STRIPE_SECRET_KEY is a publishable key (pk_...). Use a secret key (sk_...).' });
     }
     const user = await User.findById(req.user.id).populate('cart.product');
     if (!user) {
