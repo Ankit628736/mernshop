@@ -1,20 +1,45 @@
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecret) {
-  console.warn('[PAYMENT] STRIPE_SECRET_KEY is not set. Payment intent creation will fail.');
-}
-if (stripeSecret && stripeSecret.startsWith('pk_')) {
-  console.error('[PAYMENT] STRIPE_SECRET_KEY is a publishable (pk_) key. You must use a secret (sk_) key from Stripe dashboard.');
-}
-const stripe = require('stripe')(stripeSecret && stripeSecret.startsWith('sk_') ? stripeSecret : '');
+// Lazy Stripe initialization so a missing/invalid key does NOT crash unrelated routes
 const User = require('../models/User');
+let stripeInstance = null;
+let stripeKeyStateLogged = false;
+
+function getStripe() {
+  const secret = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKeyStateLogged) {
+    if (!secret) {
+      console.warn('[PAYMENT] STRIPE_SECRET_KEY is not set. Payment endpoints will return configuration error.');
+    } else if (secret.startsWith('pk_')) {
+      console.error('[PAYMENT] STRIPE_SECRET_KEY is a publishable (pk_) key. Use a secret key (sk_...) from the Stripe Dashboard > Developers > API keys.');
+    }
+    stripeKeyStateLogged = true;
+  }
+  if (!secret || !secret.startsWith('sk_')) {
+    return null; // Misconfigured – caller will handle
+  }
+  if (!stripeInstance) {
+    const stripeLib = require('stripe');
+    try {
+      stripeInstance = stripeLib(secret);
+    } catch (e) {
+      console.error('[PAYMENT] Failed to initialize Stripe SDK:', e.message);
+      return null;
+    }
+  }
+  return stripeInstance;
+}
 
 exports.createPaymentIntent = async (req, res) => {
   try {
-    if (!stripeSecret) {
-      return res.status(500).json({ error: 'Payment service not configured (missing STRIPE_SECRET_KEY).' });
-    }
-    if (stripeSecret.startsWith('pk_')) {
-      return res.status(500).json({ error: 'Server misconfiguration: STRIPE_SECRET_KEY is a publishable key (pk_...). Use a secret key (sk_...).' });
+    const stripe = getStripe();
+    if (!stripe) {
+      const raw = process.env.STRIPE_SECRET_KEY;
+      if (!raw) {
+        return res.status(500).json({ error: 'Payment service not configured: set STRIPE_SECRET_KEY (starts with sk_) in server environment.' });
+      }
+      if (raw.startsWith('pk_')) {
+        return res.status(500).json({ error: 'Server misconfiguration: STRIPE_SECRET_KEY is a publishable (pk_) key. Use the secret key (sk_...) from Stripe Dashboard.' });
+      }
+      return res.status(500).json({ error: 'Payment service unavailable due to Stripe initialization failure.' });
     }
     const user = await User.findById(req.user.id).populate('cart.product');
     if (!user) {
