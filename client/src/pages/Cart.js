@@ -23,8 +23,10 @@ function Cart() {
       setClientSecret(res.data.clientSecret);
       setShowCheckout(true);
     } catch (err) {
-      console.error("Failed to create payment intent", err);
-      alert("Could not initiate checkout. Please try again.");
+      const status = err.response?.status;
+      const msg = err.response?.data?.error || err.message;
+      console.error("Failed to create payment intent", { status, msg, full: err });
+      alert(`Could not initiate checkout: ${msg}`);
     }
   };
 
@@ -65,11 +67,11 @@ function Cart() {
                 <img src={item.product.image || 'https://via.placeholder.com/100'} alt={item.product.name} className="w-24 h-24 object-cover mr-4 rounded"/>
                 <div>
                   <h2 className="text-xl font-semibold">{item.product.name}</h2>
-                  <p className="text-gray-600">${item.product.price.toFixed(2)} x {item.quantity}</p>
+                  <p className="text-gray-600">Rs. {item.product.price.toFixed(2)} x {item.quantity}</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-lg font-bold">${(item.product.price * item.quantity).toFixed(2)}</p>
+                <p className="text-lg font-bold">Rs. {(item.product.price * item.quantity).toFixed(2)}</p>
                 <button
                   onClick={() => removeFromCart(item.product._id)}
                   className="text-red-500 hover:text-red-700 font-semibold text-sm mt-1"
@@ -82,7 +84,7 @@ function Cart() {
           {/* ================================================================== */}
 
           <div className="mt-6 text-right">
-            <h2 className="text-2xl font-bold">Total: ${total.toFixed(2)}</h2>
+            <h2 className="text-2xl font-bold">Total: Rs. {total.toFixed(2)}</h2>
             <button 
               onClick={handleCheckoutClick}
               className="mt-4 bg-green-500 text-white py-2 px-6 rounded-lg hover:bg-green-600">
