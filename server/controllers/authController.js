@@ -32,11 +32,18 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: "Invalid credentials." });
     }
     const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.cookie('token', token, {
+
+    // Cookie settings: allow cross-site (frontend domain different from API) in production
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProd, // must be true for SameSite=None on modern browsers
+      sameSite: isProd ? 'None' : 'Lax',
+      domain: process.env.COOKIE_DOMAIN || undefined, // optionally set e.g. yourdomain.com for subdomains
+      path: '/',
       maxAge: 24 * 60 * 60 * 1000 // 1 day
-    });
+    };
+    res.cookie('token', token, cookieOptions);
     res.status(200).json({
       id: user._id,
       name: user.name,
@@ -50,7 +57,15 @@ exports.login = async (req, res) => {
 
 // User Logout
 exports.logout = (req, res) => {
-  res.cookie('token', '', { httpOnly: true, expires: new Date(0) });
+  const isProd = process.env.NODE_ENV === 'production';
+  res.cookie('token', '', {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'None' : 'Lax',
+    domain: process.env.COOKIE_DOMAIN || undefined,
+    path: '/',
+    expires: new Date(0)
+  });
   res.status(200).json({ message: "Logged out successfully." });
 };
 

@@ -9,10 +9,17 @@ const User = require('./models/User');
 const app = express();
 
 // Middleware
-// Configure CORS dynamically for local dev or deployed frontend
-const allowedOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
+// Configure CORS dynamically for single or multiple (comma-separated) origins
+const rawOrigins = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
+const originList = rawOrigins.split(',').map(o => o.trim());
 app.use(cors({
-  origin: allowedOrigin,
+  origin: function (origin, callback) {
+    // Allow non-browser tools (no origin) or matching origins
+    if (!origin || originList.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS not allowed for origin: ' + origin));
+  },
   credentials: true
 }));
 app.use(express.json());
