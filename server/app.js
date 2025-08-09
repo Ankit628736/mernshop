@@ -11,11 +11,18 @@ const app = express();
 // Middleware
 // Configure CORS dynamically for single or multiple (comma-separated) origins
 const rawOrigins = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
-const originList = rawOrigins.split(',').map(o => o.trim());
+const originList = rawOrigins.split(',').map(o => o.trim()).filter(Boolean);
+const allowPreviews = process.env.ALLOW_VERCEL_PREVIEWS === '1';
 app.use(cors({
   origin: function (origin, callback) {
     // Allow non-browser tools (no origin) or matching origins
-    if (!origin || originList.includes(origin)) {
+    if (!origin) {
+      return callback(null, true); // non-browser or same-origin
+    }
+    if (originList.includes(origin)) {
+      return callback(null, true);
+    }
+    if (allowPreviews && /https:\/\/[a-z0-9-]+-.*vercel\.app$/.test(origin)) {
       return callback(null, true);
     }
     return callback(new Error('CORS not allowed for origin: ' + origin));

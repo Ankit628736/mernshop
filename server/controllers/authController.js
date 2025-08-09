@@ -45,7 +45,7 @@ exports.login = async (req, res) => {
     const cookieOptions = {
       httpOnly: true,
       secure: isProd, // must be true for SameSite=None on modern browsers
-      sameSite: isProd ? 'None' : 'Lax',
+      sameSite: isProd ? 'none' : 'lax', // lowercase per cookie spec
       domain: process.env.COOKIE_DOMAIN || undefined, // optionally set e.g. yourdomain.com for subdomains
       path: '/',
       maxAge: 24 * 60 * 60 * 1000 // 1 day
@@ -69,7 +69,7 @@ exports.logout = (req, res) => {
   res.cookie('token', '', {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? 'None' : 'Lax',
+    sameSite: isProd ? 'none' : 'lax',
     domain: process.env.COOKIE_DOMAIN || undefined,
     path: '/',
     expires: new Date(0)
