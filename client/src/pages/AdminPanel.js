@@ -90,7 +90,7 @@ function AdminPanel() {
     const deleteProduct = async (id) => {
         if (window.confirm("Are you sure you want to delete this product?")) {
             try {
-                await axios.delete(`/api/products/Rs.{id}`);
+                await axios.delete(`/api/products/${id}`);
                 fetchData();
             } catch (err) {
                 console.error("Failed to delete product:", err);
