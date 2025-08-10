@@ -39,7 +39,7 @@ function Home() {
       {/* Hero Section */}
       <section 
         className="relative bg-cover bg-center text-white py-32 px-10 object-fill" 
-        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1533681018244-5b1a83e959d9?q=80&w=2070')" }}
+        style={{ backgroundImage: "url('/image/istockphoto-2185827880-612x612.jpg')" }}
       >
         <div className="absolute inset-0 bg-black opacity-50"></div>
         <div className="relative z-10 text-center">
