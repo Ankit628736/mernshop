@@ -12,7 +12,7 @@ const app = express();
 // Configure CORS dynamically for single or multiple (comma-separated) origins
 const rawOrigins = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
 const originList = rawOrigins.split(',').map(o => o.trim()).filter(Boolean);
-const allowPreviews = process.env.ALLOW_VERCEL_PREVIEWS === '1';
+const allowPreviews = process.env.ALLOW_VERCEL_PREVIEWS === '1'; // legacy flag (kept for backward compat)
 const allowAnyDebug = process.env.ALLOW_ANY_ORIGIN_FOR_DEBUG === '1';
 app.use(cors({
   origin: function (origin, callback) {
@@ -26,8 +26,13 @@ app.use(cors({
     if (originList.includes(origin)) {
       return callback(null, true);
     }
-    // Allow Vercel preview domains when enabled (generic) e.g. project-randomhash-user-projects.vercel.app
-    if (allowPreviews && /^https:\/\/.*-ankit628736s-projects\.vercel\.app$/.test(origin)) {
+    // Always allow Vercel preview domains for this account (pattern: anything-ankit628736s-projects.vercel.app)
+    const vercelPreviewPattern = /^https:\/\/[a-z0-9-]+-ankit628736s-projects\.vercel\.app$/;
+    if (vercelPreviewPattern.test(origin)) {
+      return callback(null, true);
+    }
+    // (Deprecated) previous behavior behind flag retained for safety if pattern changes
+    if (allowPreviews && /ankit628736s-projects\.vercel\.app$/.test(origin)) {
       return callback(null, true);
     }
     // Fallback: reject
