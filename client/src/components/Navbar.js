@@ -13,7 +13,7 @@ function Navbar() {
     try {
       await axios.post('/api/auth/logout');
       setUser(null);
-      localStorage.removeItem('authToken');
+  localStorage.removeItem('authToken');
       clearCart();
       navigate('/login');
     } catch (err) {
@@ -24,82 +24,30 @@ function Navbar() {
   const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <nav className="bg-gradient-to-r from-green-600 to-lime-500 p-4 shadow-lg sticky top-0 z-50">
+    <nav className="bg-gray-800 p-4 text-white shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-        {/* Logo */}
-        <Link
-          to="/"
-          className="text-3xl font-extrabold tracking-wider text-white drop-shadow-md hover:scale-105 transition-transform"
-        >
-          🍎 Fruitify
-        </Link>
-
-        {/* Links */}
+        <Link to="/" className="text-2xl font-bold tracking-wider">Fruitify</Link>
         <div className="flex items-center space-x-6">
-          <Link
-            to="/products"
-            className="text-white font-medium hover:text-yellow-200 transition-colors"
-          >
-            Products
-          </Link>
-
+          <Link to="/products" className="hover:text-gray-300 transition-colors">Products</Link>
           {user ? (
             <>
-              {user.isAdmin && (
-                <Link
-                  to="/admin"
-                  className="text-white font-medium hover:text-yellow-200 transition-colors"
-                >
-                  Admin
-                </Link>
-              )}
-              <Link
-                to="/history"
-                className="text-white font-medium hover:text-yellow-200 transition-colors"
-              >
-                Order History
-              </Link>
-
-              {/* Cart */}
-              <Link
-                to="/cart"
-                className="relative text-white font-medium hover:text-yellow-200 transition-colors"
-              >
-                🛒 Cart
+              {user.isAdmin && <Link to="/admin" className="hover:text-gray-300 transition-colors">Admin</Link>}
+              <Link to="/history" className="hover:text-gray-300">Order History</Link>
+              <Link to="/cart" className="relative hover:text-gray-300 transition-colors">
+                Cart
                 {cartItemCount > 0 && (
-                  <span className="absolute -top-2 -right-4 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-md">
+                  <span className="absolute -top-2 -right-4 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {cartItemCount}
                   </span>
                 )}
               </Link>
-
-              {/* Logout Button */}
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 px-3 py-1 rounded-full text-white font-semibold hover:bg-red-600 shadow-md transition-transform hover:scale-105"
-              >
-                Logout
-              </button>
-
-              {/* Greeting */}
-              <span className="font-semibold hidden sm:block text-white">
-                Hi, <span className="text-yellow-200">{user.name}</span>
-              </span>
+              <button onClick={handleLogout} className="bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition-colors">Logout</button>
+              <span className="font-semibold hidden sm:block">Hi, {user.name}</span>
             </>
           ) : (
             <>
-              <Link
-                to="/login"
-                className="bg-white text-green-700 px-4 py-1 rounded-full font-semibold hover:bg-yellow-100 shadow-md transition-transform hover:scale-105"
-              >
-                Login
-              </Link>
-              <Link
-                to="/signup"
-                className="bg-yellow-300 text-green-800 px-4 py-1 rounded-full font-semibold hover:bg-yellow-400 shadow-md transition-transform hover:scale-105"
-              >
-                Signup
-              </Link>
+              <Link to="/login" className="hover:text-gray-300 transition-colors">Login</Link>
+              <Link to="/signup" className="hover:text-gray-300 transition-colors">Signup</Link>
             </>
           )}
         </div>
@@ -108,4 +56,5 @@ function Navbar() {
   );
 }
 
+// Make sure this line is at the bottom of the file!
 export default Navbar;
